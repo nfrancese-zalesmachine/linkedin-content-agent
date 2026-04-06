@@ -18,12 +18,35 @@ export const ContentIdeaSchema = z.object({
 });
 export type ContentIdea = z.infer<typeof ContentIdeaSchema>;
 
+// ─── Creator Profile (multi-tenant) ──────────────────────────────────────────
+
+export const PillarProfileSchema = z.object({
+  id: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  name: z.string().min(1),
+  keywords: z.array(z.string()).min(1),
+  definition: z.string().min(10),
+  hookPatterns: z.string().min(10),
+  examples: z.string().default(''),
+});
+export type PillarProfile = z.infer<typeof PillarProfileSchema>;
+
+export const CreatorProfileSchema = z.object({
+  creatorName: z.string().min(1),
+  voiceRules: z.string().min(10),
+  icp: z.string().min(10),
+  pillars: z.array(PillarProfileSchema).min(1).max(5),
+  language: z.enum(['es', 'en', 'pt']).default('es'),
+  linkedinBestPractices: z.string().optional(),
+});
+export type CreatorProfile = z.infer<typeof CreatorProfileSchema>;
+
 export const WebhookPayloadSchema = z.object({
-  ideas: z.array(ContentIdeaSchema).min(1).max(3),
+  clientId: z.string().optional(),
+  profileId: z.string().optional(),
+  ideas: z.array(ContentIdeaSchema).min(1).max(10),
   weekIndex: z.number().int().min(1).max(52).optional(),
   isLeadMagnetWeek: z.boolean().default(false),
-  // Override default Notion output DB
-  notionOutputDbId: z.string().optional(),
+  creatorProfile: CreatorProfileSchema.optional(),
 });
 export type WebhookPayload = z.infer<typeof WebhookPayloadSchema>;
 
@@ -37,6 +60,7 @@ export interface SessionContext {
   fewShotExamples: string; // 3 real posts from same pillar
   linkedinBestPractices: string;
   hookPatterns: string;
+  language: 'es' | 'en' | 'pt';
 }
 
 export interface FormatSpec {
@@ -136,8 +160,7 @@ export const GenerateResultSchema = z.object({
   pillar: z.number().int().min(1).max(5),
   criticScore: z.number(),
   rewrote: z.boolean(),
-  notionPageId: z.string().optional(),
-  notionPageUrl: z.string().optional(),
+  supabasePostId: z.string().optional(),
   content: z.object({
     post: PostDraftSchema.optional(),
     leadMagnet: LeadMagnetDraftSchema.optional(),

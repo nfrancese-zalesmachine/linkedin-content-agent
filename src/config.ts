@@ -13,10 +13,6 @@ function optional(key: string, fallback: string): string {
 export const config = {
   anthropicApiKey: required('ANTHROPIC_API_KEY'),
   perplexityApiKey: process.env['PERPLEXITY_API_KEY'] ?? null,
-  notionToken: required('NOTION_TOKEN'),
-  notionIdeasDbId: optional('NOTION_IDEAS_DB_ID', '2eea0b460653805aa372c7903de724a5'),
-  notionTasksDbId: optional('NOTION_TASKS_DB_ID', '18ca0b46065381388fd0fcaaf7c5dfd4'),
-  notionLeadsDbId: optional('NOTION_LEADS_DB_ID', '313a0b46065381aa8f31c4d7368812c4'),
 
   port: parseInt(optional('PORT', '3000')),
 
@@ -34,6 +30,10 @@ export const config = {
 
   // Cache
   contextCacheTtlMs: parseInt(optional('CONTEXT_CACHE_TTL_MS', '86400000')),
+
+  // Supabase (CaaS platform)
+  supabaseUrl: process.env['SUPABASE_URL'] ?? null,
+  supabaseServiceKey: process.env['SUPABASE_SERVICE_KEY'] ?? null,
 
   // Security
   webhookSecret: process.env['WEBHOOK_SECRET'] ?? null,

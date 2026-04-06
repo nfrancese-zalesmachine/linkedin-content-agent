@@ -7,13 +7,7 @@ import { refineLMTopic, researchLMTopic } from './agents/research-agent.js';
 import { buildLMOutline } from './agents/lm-outline-agent.js';
 import { writeLMSection, assembleLM } from './agents/lm-section-writer-agent.js';
 import { writePromoPost } from './agents/promo-post-writer-agent.js';
-import { postDraftToBlocks, leadMagnetToBlocks } from './skills/notion-formatter.js';
-import {
-  createTaskPage,
-  createLeadMagnetPage,
-  appendBlocks,
-  markIdeaInProgress,
-} from './lib/notion.js';
+import { persistPost, isSupabaseConfigured } from './lib/supabase.js';
 import { config } from './config.js';
 import { logger } from './lib/logger.js';
 import type {
@@ -23,6 +17,7 @@ import type {
   PostDraft,
   LeadMagnetDraft,
   SessionContext,
+  CreatorProfile,
 } from './types/index.js';
 
 // ─── Regular Post Pipeline ────────────────────────────────────────────────────
@@ -30,7 +25,9 @@ import type {
 async function runPostPipeline(
   idea: ContentIdea,
   isLeadMagnetWeek: boolean,
-  notionOutputDbId?: string,
+  creatorProfile?: CreatorProfile,
+  clientId?: string,
+  profileId?: string,
 ): Promise<GenerateResult> {
   const start = Date.now();
 
@@ -39,11 +36,11 @@ async function runPostPipeline(
   logger.info('Format selected', { title: idea.title, format, rationale });
 
   if (format === 'lead_magnet') {
-    return runLeadMagnetPipeline(idea, notionOutputDbId);
+    return runLeadMagnetPipeline(idea, creatorProfile, clientId, profileId);
   }
 
   // Phase 0b: Context assembly (no LLM, cached)
-  const ctx = await buildSessionContext(idea, format);
+  const ctx = await buildSessionContext(idea, format, creatorProfile);
 
   // Phase 1: Write
   let draft: PostDraft = await writePost(idea, ctx);
@@ -59,37 +56,31 @@ async function runPostPipeline(
     rewrote = true;
   }
 
-  // Phase 4: Persist to Notion
-  let notionPageId: string | undefined;
-  let notionPageUrl: string | undefined;
-
-  try {
-    const blocks = postDraftToBlocks(draft);
-    const page = await createTaskPage({ title: idea.title, dbId: notionOutputDbId });
-    await appendBlocks(page.id, blocks);
-    notionPageId = page.id;
-    notionPageUrl = page.url;
-
-    if (idea.notionId) {
-      await markIdeaInProgress(idea.notionId).catch(err =>
-        logger.warn('Could not mark idea in progress', { error: err.message }),
-      );
-    }
-  } catch (err) {
-    logger.error('Notion persist failed', { error: (err as Error).message });
-    // Continue — return content in response body
-  }
-
-  return {
+  // Phase 4: Persist to Supabase
+  let supabasePostId: string | undefined;
+  const result: GenerateResult = {
     success: true,
     ideaTitle: idea.title,
     format,
     pillar: ctx.pillar,
     criticScore: critic.score,
     rewrote,
-    notionPageId,
-    notionPageUrl,
     content: { post: draft },
+    durationMs: 0,
+  };
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { id } = await persistPost(result, { notionId: idea.notionId, clientId, profileId, creatorName: creatorProfile?.creatorName });
+      supabasePostId = id;
+    } catch (err) {
+      logger.error('Supabase persist failed', { error: (err as Error).message });
+    }
+  }
+
+  return {
+    ...result,
+    supabasePostId,
     durationMs: Date.now() - start,
   };
 }
@@ -98,12 +89,14 @@ async function runPostPipeline(
 
 async function runLeadMagnetPipeline(
   idea: ContentIdea,
-  notionOutputDbId?: string,
+  creatorProfile?: CreatorProfile,
+  clientId?: string,
+  profileId?: string,
 ): Promise<GenerateResult> {
   const start = Date.now();
 
   // Phase 0: Context assembly
-  const ctx = await buildSessionContext(idea, 'lead_magnet') as SessionContext;
+  const ctx = await buildSessionContext(idea, 'lead_magnet', creatorProfile) as SessionContext;
 
   // Phase 1: Refine topic + Research (parallel)
   const lmMeta = await refineLMTopic(idea);
@@ -142,53 +135,41 @@ async function runLeadMagnetPipeline(
     logger.warn('Promo post write failed', { error: (err as Error).message });
   }
 
-  // Phase 6: Persist LM to Notion
-  let notionPageId: string | undefined;
-  let notionPageUrl: string | undefined;
-
-  try {
-    const { part1, overflow } = leadMagnetToBlocks(lmDraft);
-    const page = await createLeadMagnetPage({
-      title: lmDraft.title,
-      topic: lmDraft.topic,
-      pillar: lmDraft.pillar,
-      dbId: notionOutputDbId,
-    });
-    await appendBlocks(page.id, part1);
-    if (overflow.length > 0) {
-      await appendBlocks(page.id, overflow);
-    }
-    notionPageId = page.id;
-    notionPageUrl = page.url;
-
-    if (idea.notionId) {
-      await markIdeaInProgress(idea.notionId).catch(() => null);
-    }
-  } catch (err) {
-    logger.error('Notion LM persist failed', { error: (err as Error).message });
-  }
-
-  // Phase 7: Persist promo post task if available
-  if (promoPost) {
-    try {
-      const promoTitle = `LM Promo: ${lmDraft.title}`;
-      const promoPage = await createTaskPage({ title: promoTitle, dbId: notionOutputDbId });
-      await appendBlocks(promoPage.id, postDraftToBlocks(promoPost));
-    } catch (err) {
-      logger.warn('Promo post Notion persist failed', { error: (err as Error).message });
-    }
-  }
-
-  return {
+  // Phase 6: Persist LM + promo to Supabase
+  let supabasePostId: string | undefined;
+  const lmResult: GenerateResult = {
     success: true,
     ideaTitle: idea.title,
     format: 'lead_magnet',
     pillar: ctx.pillar,
-    criticScore: 0, // No critic on LM (length makes it impractical)
+    criticScore: 0,
     rewrote: false,
-    notionPageId,
-    notionPageUrl,
     content: { leadMagnet: lmDraft, promoPost },
+    durationMs: 0,
+  };
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { id } = await persistPost(lmResult, { notionId: idea.notionId, clientId, profileId });
+      supabasePostId = id;
+      if (promoPost) {
+        await persistPost({
+          ...lmResult,
+          format: 'imagen_con_copy',
+          ideaTitle: `LM Promo: ${lmDraft.title}`,
+          content: { post: promoPost },
+        }, { clientId, profileId }).catch(err =>
+          logger.warn('Supabase promo post persist failed', { error: err.message }),
+        );
+      }
+    } catch (err) {
+      logger.error('Supabase LM persist failed', { error: (err as Error).message });
+    }
+  }
+
+  return {
+    ...lmResult,
+    supabasePostId,
     durationMs: Date.now() - start,
   };
 }
@@ -196,17 +177,18 @@ async function runLeadMagnetPipeline(
 // ─── Batch Orchestrator ───────────────────────────────────────────────────────
 
 export async function generateContent(payload: WebhookPayload): Promise<GenerateResult[]> {
-  const { ideas, isLeadMagnetWeek, notionOutputDbId } = payload;
+  const { ideas, isLeadMagnetWeek, creatorProfile, clientId, profileId } = payload;
 
   logger.info('Orchestrator started', {
     count: ideas.length,
     isLeadMagnetWeek,
+    tenant: creatorProfile?.creatorName ?? 'nicolas',
+    clientId,
   });
 
-  // Run all ideas in parallel
   const results = await Promise.all(
     ideas.map(idea =>
-      runPostPipeline(idea, isLeadMagnetWeek ?? false, notionOutputDbId).catch(err => {
+      runPostPipeline(idea, isLeadMagnetWeek ?? false, creatorProfile, clientId, profileId).catch(err => {
         logger.error('Pipeline failed for idea', { title: idea.title, error: err.message });
         const result: GenerateResult = {
           success: false,

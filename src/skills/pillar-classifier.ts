@@ -1,4 +1,4 @@
-import type { ContentPillar } from '../types/index.js';
+import type { ContentPillar, PillarProfile } from '../types/index.js';
 
 // Keyword → pillar mappings (ordered by specificity)
 const PILLAR_KEYWORDS: Array<{ pillar: ContentPillar; keywords: string[] }> = [
@@ -49,4 +49,25 @@ export function classifyPillar(category: string, description: string): ContentPi
 
   // Fallback: pillar 1 (GTM Engineering — most general)
   return 1;
+}
+
+/**
+ * Classify a content idea into a pillar using a client's CreatorProfile pillar keywords.
+ * Falls back to the first pillar in the profile if no keyword match is found.
+ */
+export function classifyPillarFromProfile(
+  category: string,
+  description: string,
+  pillars: PillarProfile[],
+): ContentPillar {
+  const text = `${category} ${description}`.toLowerCase();
+
+  for (const pillarProfile of pillars) {
+    if (pillarProfile.keywords.some(k => text.includes(k.toLowerCase()))) {
+      return pillarProfile.id;
+    }
+  }
+
+  // Fallback: first pillar in the client's profile
+  return pillars[0].id;
 }
