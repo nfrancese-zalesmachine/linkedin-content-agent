@@ -1,4 +1,13 @@
 import { classifyPillar, classifyPillarFromProfile } from '../skills/pillar-classifier.js';
+
+const DEFAULT_LINKEDIN_BEST_PRACTICES = `
+- Hook must stop the scroll in the first line
+- Short paragraphs, one idea per line
+- No buzzwords, no fluff
+- End with a clear takeaway or question
+- 3-5 hashtags max
+`.trim();
+
 import { getFormatSpec, getOutputTemplate } from '../skills/format-rules.js';
 import { getHookPatterns } from '../skills/hook-patterns.js';
 import {
@@ -34,7 +43,7 @@ export async function buildSessionContext(
     );
     const pillarProfile = creatorProfile.pillars.find(p => p.id === pillar) ?? creatorProfile.pillars[0];
     const linkedinBestPractices = creatorProfile.linkedinBestPractices
-      ?? await loadLinkedInBestPractices();
+      ?? await loadLinkedInBestPractices().catch(() => DEFAULT_LINKEDIN_BEST_PRACTICES);
 
     // Prepend language instruction so all agents write in the correct language
     const langPrefix = language !== 'es'

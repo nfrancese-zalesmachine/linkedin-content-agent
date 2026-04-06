@@ -10,9 +10,13 @@ async function readKnowledgeFile(filename: string): Promise<string> {
   const cached = knowledgeCache.get(filename);
   if (cached) return cached;
 
-  const content = await readFile(join(KNOWLEDGE_DIR, filename), 'utf-8');
-  knowledgeCache.set(filename, content);
-  return content;
+  try {
+    const content = await readFile(join(KNOWLEDGE_DIR, filename), 'utf-8');
+    knowledgeCache.set(filename, content);
+    return content;
+  } catch {
+    return '';
+  }
 }
 
 /**
