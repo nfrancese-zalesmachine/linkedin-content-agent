@@ -28,6 +28,7 @@ async function runPostPipeline(
   creatorProfile?: CreatorProfile,
   clientId?: string,
   profileId?: string,
+  recentHooks?: string[],
 ): Promise<GenerateResult> {
   const start = Date.now();
 
@@ -43,7 +44,7 @@ async function runPostPipeline(
   const ctx = await buildSessionContext(idea, format, creatorProfile);
 
   // Phase 1: Write
-  let draft: PostDraft = await writePost(idea, ctx);
+  let draft: PostDraft = await writePost(idea, ctx, recentHooks);
 
   // Phase 2: Critique
   const critic = await critiquePost(draft);
@@ -51,9 +52,12 @@ async function runPostPipeline(
 
   // Phase 3: Rewrite if needed
   let rewrote = false;
+  let finalCritic = critic;
   if (!critic.passed) {
     draft = await rewritePost(draft, critic, ctx);
     rewrote = true;
+    finalCritic = await critiquePost(draft);
+    logger.info('Post-rewrite score', { title: idea.title, before: critic.score, after: finalCritic.score });
   }
 
   // Phase 4: Persist to Supabase
@@ -63,7 +67,7 @@ async function runPostPipeline(
     ideaTitle: idea.title,
     format,
     pillar: ctx.pillar,
-    criticScore: critic.score,
+    criticScore: finalCritic.score,
     rewrote,
     content: { post: draft },
     durationMs: 0,
@@ -177,7 +181,7 @@ async function runLeadMagnetPipeline(
 // ─── Batch Orchestrator ───────────────────────────────────────────────────────
 
 export async function generateContent(payload: WebhookPayload): Promise<GenerateResult[]> {
-  const { ideas, isLeadMagnetWeek, creatorProfile, clientId, profileId } = payload;
+  const { ideas, isLeadMagnetWeek, creatorProfile, clientId, profileId, recentHooks } = payload;
 
   logger.info('Orchestrator started', {
     count: ideas.length,
@@ -188,7 +192,7 @@ export async function generateContent(payload: WebhookPayload): Promise<Generate
 
   const results = await Promise.all(
     ideas.map(idea =>
-      runPostPipeline(idea, isLeadMagnetWeek ?? false, creatorProfile, clientId, profileId).catch(err => {
+      runPostPipeline(idea, isLeadMagnetWeek ?? false, creatorProfile, clientId, profileId, recentHooks).catch(err => {
         logger.error('Pipeline failed for idea', { title: idea.title, error: err.message });
         const result: GenerateResult = {
           success: false,

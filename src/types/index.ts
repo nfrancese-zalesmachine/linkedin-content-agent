@@ -47,6 +47,7 @@ export const WebhookPayloadSchema = z.object({
   weekIndex: z.number().int().min(1).max(52).optional(),
   isLeadMagnetWeek: z.boolean().default(false),
   creatorProfile: CreatorProfileSchema.optional(),
+  recentHooks: z.array(z.string()).optional(),
 });
 export type WebhookPayload = z.infer<typeof WebhookPayloadSchema>;
 
