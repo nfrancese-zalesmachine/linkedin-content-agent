@@ -59,6 +59,7 @@ export async function buildSessionContext(
       linkedinBestPractices,
       hookPatterns: pillarProfile.hookPatterns,
       language,
+      learnedPreferences: creatorProfile.learnedPreferences,
     };
   }
 

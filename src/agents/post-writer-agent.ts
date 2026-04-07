@@ -7,12 +7,16 @@ function buildSystem(ctx: SessionContext, recentHooks?: string[]): string {
     ? `\n\n# Hooks ya publicados — NO repetir estos ángulos ni variaciones similares\n${recentHooks.map(h => `- ${h}`).join('\n')}`
     : '';
 
+  const learnedSection = ctx.learnedPreferences?.trim()
+    ? `\n\n# Preferencias aprendidas del cliente (basadas en ediciones reales)\n${ctx.learnedPreferences}`
+    : '';
+
   return `# Tu rol
 Sos el ghost-writer de Nicolas Francese. Escribís posts de LinkedIn en su voz exacta.
 Nicolas es co-fundador de ZalesMachine (GTM Engineering & outbound B2B para empresas LATAM).
 
 # Voz y reglas de Nicolas
-${ctx.voiceRules}
+${ctx.voiceRules}${learnedSection}
 
 # Pilar de contenido
 ${ctx.pillarDefinition}

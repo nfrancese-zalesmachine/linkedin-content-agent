@@ -37,6 +37,7 @@ export const CreatorProfileSchema = z.object({
   pillars: z.array(PillarProfileSchema).min(1).max(5),
   language: z.enum(['es', 'en', 'pt']).default('es'),
   linkedinBestPractices: z.string().optional(),
+  learnedPreferences: z.string().optional(),
 });
 export type CreatorProfile = z.infer<typeof CreatorProfileSchema>;
 
@@ -62,6 +63,7 @@ export interface SessionContext {
   linkedinBestPractices: string;
   hookPatterns: string;
   language: 'es' | 'en' | 'pt';
+  learnedPreferences?: string;
 }
 
 export interface FormatSpec {
