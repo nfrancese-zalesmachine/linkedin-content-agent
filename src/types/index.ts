@@ -49,6 +49,7 @@ export const WebhookPayloadSchema = z.object({
   isLeadMagnetWeek: z.boolean().default(false),
   creatorProfile: CreatorProfileSchema.optional(),
   recentHooks: z.array(z.string()).optional(),
+  clientCompanyName: z.string().optional(),
 });
 export type WebhookPayload = z.infer<typeof WebhookPayloadSchema>;
 
@@ -64,6 +65,8 @@ export interface SessionContext {
   hookPatterns: string;
   language: 'es' | 'en' | 'pt';
   learnedPreferences?: string;
+  creatorName?: string;
+  clientCompanyName?: string;
 }
 
 export interface FormatSpec {
