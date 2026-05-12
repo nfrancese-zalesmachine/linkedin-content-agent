@@ -30,6 +30,7 @@ export async function buildSessionContext(
   idea: ContentIdea,
   format: ContentFormat,
   creatorProfile?: CreatorProfile,
+  clientCompanyName?: string,
 ): Promise<SessionContext> {
   const formatSpec = `${getOutputTemplate(format)}\n\nPROHIBICIONES DE FORMATO:\n${getFormatSpec(format).prohibitions.map(p => `- ${p}`).join('\n')}`;
 
@@ -60,6 +61,8 @@ export async function buildSessionContext(
       hookPatterns: pillarProfile.hookPatterns,
       language,
       learnedPreferences: creatorProfile.learnedPreferences,
+      creatorName: creatorProfile.creatorName,
+      clientCompanyName: clientCompanyName ?? '',
     };
   }
 
