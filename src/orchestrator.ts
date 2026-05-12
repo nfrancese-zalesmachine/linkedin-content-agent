@@ -29,6 +29,7 @@ async function runPostPipeline(
   clientId?: string,
   profileId?: string,
   recentHooks?: string[],
+  clientCompanyName?: string,
 ): Promise<GenerateResult> {
   const start = Date.now();
 
@@ -37,11 +38,11 @@ async function runPostPipeline(
   logger.info('Format selected', { title: idea.title, format, rationale });
 
   if (format === 'lead_magnet') {
-    return runLeadMagnetPipeline(idea, creatorProfile, clientId, profileId);
+    return runLeadMagnetPipeline(idea, creatorProfile, clientId, profileId, clientCompanyName);
   }
 
   // Phase 0b: Context assembly (no LLM, cached)
-  const ctx = await buildSessionContext(idea, format, creatorProfile);
+  const ctx = await buildSessionContext(idea, format, creatorProfile, clientCompanyName);
 
   // Phase 1: Write
   let draft: PostDraft = await writePost(idea, ctx, recentHooks);
@@ -96,11 +97,12 @@ async function runLeadMagnetPipeline(
   creatorProfile?: CreatorProfile,
   clientId?: string,
   profileId?: string,
+  clientCompanyName?: string,
 ): Promise<GenerateResult> {
   const start = Date.now();
 
   // Phase 0: Context assembly
-  const ctx = await buildSessionContext(idea, 'lead_magnet', creatorProfile) as SessionContext;
+  const ctx = await buildSessionContext(idea, 'lead_magnet', creatorProfile, clientCompanyName) as SessionContext;
 
   // Phase 1: Refine topic + Research (parallel)
   const lmMeta = await refineLMTopic(idea);
@@ -181,7 +183,7 @@ async function runLeadMagnetPipeline(
 // ─── Batch Orchestrator ───────────────────────────────────────────────────────
 
 export async function generateContent(payload: WebhookPayload): Promise<GenerateResult[]> {
-  const { ideas, isLeadMagnetWeek, creatorProfile, clientId, profileId, recentHooks } = payload;
+  const { ideas, isLeadMagnetWeek, creatorProfile, clientId, profileId, recentHooks, clientCompanyName } = payload;
 
   logger.info('Orchestrator started', {
     count: ideas.length,
@@ -192,7 +194,7 @@ export async function generateContent(payload: WebhookPayload): Promise<Generate
 
   const results = await Promise.all(
     ideas.map(idea =>
-      runPostPipeline(idea, isLeadMagnetWeek ?? false, creatorProfile, clientId, profileId, recentHooks).catch(err => {
+      runPostPipeline(idea, isLeadMagnetWeek ?? false, creatorProfile, clientId, profileId, recentHooks, clientCompanyName).catch(err => {
         logger.error('Pipeline failed for idea', { title: idea.title, error: err.message });
         const result: GenerateResult = {
           success: false,
