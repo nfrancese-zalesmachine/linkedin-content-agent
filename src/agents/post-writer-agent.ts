@@ -3,6 +3,9 @@ import { AgentError } from '../types/index.js';
 import type { ContentIdea, PostDraft, SessionContext } from '../types/index.js';
 
 function buildSystem(ctx: SessionContext, recentHooks?: string[]): string {
+  const creatorName = ctx.creatorName ?? 'el creador';
+  const companyName = ctx.clientCompanyName ?? '';
+
   const avoidSection = recentHooks?.length
     ? `\n\n# Hooks ya publicados — NO repetir estos ángulos ni variaciones similares\n${recentHooks.map(h => `- ${h}`).join('\n')}`
     : '';
@@ -11,11 +14,14 @@ function buildSystem(ctx: SessionContext, recentHooks?: string[]): string {
     ? `\n\n# Preferencias aprendidas del cliente (basadas en ediciones reales)\n${ctx.learnedPreferences}`
     : '';
 
-  return `# Tu rol
-Sos el ghost-writer de Nicolas Francese. Escribís posts de LinkedIn en su voz exacta.
-Nicolas es co-fundador de ZalesMachine (GTM Engineering & outbound B2B para empresas LATAM).
+  const companySection = companyName
+    ? `\n\n# EMPRESA DEL CLIENTE\nEl creador trabaja en / representa a: "${companyName}". NUNCA mencionar nombres de agencias o servicios internos. SIEMPRE usar "${companyName}" cuando se haga referencia a la empresa.`
+    : '';
 
-# Voz y reglas de Nicolas
+  return `# Tu rol
+Sos el ghost-writer de ${creatorName}. Escribís posts de LinkedIn en su voz exacta.${companySection}
+
+# Voz y reglas de ${creatorName}
 ${ctx.voiceRules}${learnedSection}
 
 # Pilar de contenido
@@ -35,7 +41,7 @@ ${ctx.formatSpec}${avoidSection}
 2. Una sola idea central. No mezclar temas.
 3. Frases CORTAS. Máximo 12 palabras por línea.
 4. Sin emojis en el cuerpo. Sin negritas. Sin "¡".
-5. El copy debe pasar el "test del fundador": ¿podría Nicolas haberlo escrito basado en algo que vivió?
+5. El copy debe pasar el "test del fundador": ¿podría ${creatorName} haberlo escrito basado en algo que vivió?
 6. Responde SOLO con JSON válido siguiendo el schema.`;
 }
 
