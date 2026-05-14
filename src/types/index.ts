@@ -15,6 +15,9 @@ export const ContentIdeaSchema = z.object({
   detail: z.string().default(''),
   additionalNotes: z.string().default(''),
   sourceUrl: z.string().url().optional().or(z.literal('')).transform(v => v || undefined),
+  pillarNumber: z.number().int().min(1).max(5).optional(),
+  funnelStage: z.string().optional(),
+  funnelGoal: z.string().optional(),
 });
 export type ContentIdea = z.infer<typeof ContentIdeaSchema>;
 
