@@ -37,11 +37,8 @@ export async function buildSessionContext(
   // ─── Multi-tenant path: use inline CreatorProfile ─────────────────────────
   if (creatorProfile) {
     const language = creatorProfile.language ?? 'es';
-    const pillar = classifyPillarFromProfile(
-      idea.category,
-      idea.description,
-      creatorProfile.pillars,
-    );
+    const pillar: ContentPillar = (idea.pillarNumber as ContentPillar | undefined)
+      ?? classifyPillarFromProfile(idea.category, idea.description, creatorProfile.pillars);
     const pillarProfile = creatorProfile.pillars.find(p => p.id === pillar) ?? creatorProfile.pillars[0];
     const linkedinBestPractices = creatorProfile.linkedinBestPractices
       ?? await loadLinkedInBestPractices().catch(() => DEFAULT_LINKEDIN_BEST_PRACTICES);
