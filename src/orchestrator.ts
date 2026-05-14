@@ -12,6 +12,7 @@ import { config } from './config.js';
 import { logger } from './lib/logger.js';
 import type {
   ContentIdea,
+  ContentFormat,
   WebhookPayload,
   GenerateResult,
   PostDraft,
@@ -19,6 +20,35 @@ import type {
   SessionContext,
   CreatorProfile,
 } from './types/index.js';
+
+// ─── Format pre-assignment ────────────────────────────────────────────────────
+
+// Deterministically assigns a format to each idea slot based on the distribution
+// map. Uses a simple fill-then-shuffle approach so the distribution is exact.
+function preAssignFormats(count: number, distribution?: Record<string, number>): (ContentFormat | undefined)[] {
+  if (!distribution || Object.keys(distribution).length === 0) {
+    return Array(count).fill(undefined);
+  }
+
+  const slots: ContentFormat[] = [];
+  for (const [fmt, n] of Object.entries(distribution)) {
+    for (let i = 0; i < n; i++) {
+      slots.push(fmt as ContentFormat);
+    }
+  }
+
+  // Fisher-Yates shuffle so format order is random across positions
+  for (let i = slots.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [slots[i], slots[j]] = [slots[j], slots[i]];
+  }
+
+  // Trim or pad to match idea count
+  while (slots.length < count) {
+    slots.push(slots[slots.length % slots.length] ?? 'imagen_con_copy');
+  }
+  return slots.slice(0, count);
+}
 
 // ─── Regular Post Pipeline ────────────────────────────────────────────────────
 
@@ -30,12 +60,21 @@ async function runPostPipeline(
   profileId?: string,
   recentHooks?: string[],
   clientCompanyName?: string,
+  preAssignedFormat?: ContentFormat,
 ): Promise<GenerateResult> {
   const start = Date.now();
 
-  // Phase 0: Format selection
-  const { format, rationale } = await selectFormat(idea, isLeadMagnetWeek);
-  logger.info('Format selected', { title: idea.title, format, rationale });
+  // Phase 0: Format selection — use pre-assigned format when provided
+  let format: ContentFormat;
+  let rationale: string;
+  if (preAssignedFormat) {
+    format = preAssignedFormat;
+    rationale = 'Pre-assigned by formatDistribution from platform.';
+    logger.info('Format pre-assigned', { title: idea.title, format });
+  } else {
+    ({ format, rationale } = await selectFormat(idea, isLeadMagnetWeek));
+    logger.info('Format selected', { title: idea.title, format, rationale });
+  }
 
   if (format === 'lead_magnet') {
     return runLeadMagnetPipeline(idea, creatorProfile, clientId, profileId, clientCompanyName);
@@ -183,18 +222,23 @@ async function runLeadMagnetPipeline(
 // ─── Batch Orchestrator ───────────────────────────────────────────────────────
 
 export async function generateContent(payload: WebhookPayload): Promise<GenerateResult[]> {
-  const { ideas, isLeadMagnetWeek, creatorProfile, clientId, profileId, recentHooks, clientCompanyName } = payload;
+  const { ideas, isLeadMagnetWeek, creatorProfile, clientId, profileId, recentHooks, clientCompanyName, formatDistribution } = payload;
+
+  // Pre-assign formats before kicking off parallel pipelines so distribution is
+  // respected regardless of execution order.
+  const preAssigned = preAssignFormats(ideas.length, formatDistribution);
 
   logger.info('Orchestrator started', {
     count: ideas.length,
     isLeadMagnetWeek,
     tenant: creatorProfile?.creatorName ?? 'nicolas',
     clientId,
+    formatDistribution,
   });
 
   const results = await Promise.all(
-    ideas.map(idea =>
-      runPostPipeline(idea, isLeadMagnetWeek ?? false, creatorProfile, clientId, profileId, recentHooks, clientCompanyName).catch(err => {
+    ideas.map((idea, idx) =>
+      runPostPipeline(idea, isLeadMagnetWeek ?? false, creatorProfile, clientId, profileId, recentHooks, clientCompanyName, preAssigned[idx]).catch(err => {
         logger.error('Pipeline failed for idea', { title: idea.title, error: err.message });
         const result: GenerateResult = {
           success: false,
