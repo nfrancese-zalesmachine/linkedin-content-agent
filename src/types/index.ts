@@ -47,6 +47,8 @@ export const WebhookPayloadSchema = z.object({
   ideas: z.array(ContentIdeaSchema).min(1).max(10),
   weekIndex: z.number().int().min(1).max(52).optional(),
   isLeadMagnetWeek: z.boolean().default(false),
+  allowedFormats: z.array(z.string()).optional(),
+  formatDistribution: z.record(z.string(), z.number()).optional(),
   creatorProfile: CreatorProfileSchema.optional(),
   recentHooks: z.array(z.string()).optional(),
   clientCompanyName: z.string().optional(),
@@ -151,7 +153,7 @@ export interface ResearchReport {
 export const CriticReportSchema = z.object({
   score: z.number().min(0).max(10),
   passed: z.boolean(),
-  icpReaction: z.string(), // "would a B2B SaaS founder stop scrolling?" + rationale
+  icpReaction: z.string(), // would a B2B SaaS founder stop scrolling? + rationale
   violations: z.array(z.string()),
   suggestions: z.array(z.string()),
 });
