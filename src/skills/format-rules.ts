@@ -33,8 +33,8 @@ HASHTAGS: [máximo 3 hashtags separados por coma, sin el símbolo #]
     ],
   },
 
-  imagen_con_copy: {
-    name: 'imagen_con_copy',
+  imagen: {
+    name: 'imagen',
     maxWordsPerBlock: 150,
     requiredSections: ['HEADLINE', 'SUBHEADLINE', 'CAPTION'],
     outputTemplate: `
@@ -52,6 +52,26 @@ HASHTAGS: [máximo 3 hashtags separados por coma, sin el símbolo #]
       'Headline en forma de pregunta',
       'Caption genérico sin dato concreto o contraste',
       'Caption de más de 150 palabras',
+    ],
+  },
+
+  texto: {
+    name: 'texto',
+    maxWordsPerBlock: 220,
+    requiredSections: ['HOOK', 'CAPTION'],
+    outputTemplate: `
+HOOK: [primera línea del post, ≤15 palabras, que pare el scroll]
+
+CAPTION:
+[texto completo del post, 120-220 palabras, voz de Nicolas, una sola idea central, frases cortas, con el hook en la primera línea]
+
+HASHTAGS: [máximo 3 hashtags separados por coma, sin el símbolo #]
+`.trim(),
+    prohibitions: [
+      'Más de 220 palabras',
+      'Emojis, negritas o "¡"',
+      'Más de una idea central',
+      'CTA genérico como "sígueme" o "dale like"',
     ],
   },
 

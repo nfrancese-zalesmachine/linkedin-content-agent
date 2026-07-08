@@ -16,7 +16,7 @@ ${ctx.voiceRules}
 
 Respondé SOLO con JSON:
 {
-  "format": "imagen_con_copy",
+  "format": "imagen",
   "pillar": ${ctx.pillar},
   "hook": "primera línea del post, ≤15 palabras",
   "body": "caption completo del post, 80-120 palabras",

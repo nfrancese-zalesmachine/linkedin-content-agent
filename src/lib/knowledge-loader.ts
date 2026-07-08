@@ -63,12 +63,13 @@ export async function loadFewShotExamples(pillar: number): Promise<string> {
 export async function loadFormatGuide(format: string): Promise<string> {
   const fileMap: Record<string, string> = {
     carousel: 'carousel-format.md',
-    imagen_con_copy: 'image-copy-format.md',
+    imagen: 'image-copy-format.md',
+    texto: 'image-copy-format.md',
     video_script: 'video-script-format.md',
     lead_magnet: 'lead-magnet-format.md',
   };
   const filename = fileMap[format];
-  if (!filename) throw new Error(`Unknown format: ${format}`);
+  if (!filename) return '';
   return readKnowledgeFile(filename);
 }
 

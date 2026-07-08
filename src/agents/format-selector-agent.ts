@@ -7,12 +7,12 @@ Tu rol es elegir el formato óptimo para una idea de contenido.
 
 Formatos disponibles:
 - carousel: múltiples pasos, errores a enumerar, frameworks explicados slide a slide (7-12 slides)
-- imagen_con_copy: contraste fuerte que se expresa en 1 frase, declaración impactante, dato clave
-- video_script: historia o caso que se cuenta mejor hablando, demo de herramienta, narrativa personal
+- imagen: contraste fuerte que se expresa en 1 frase, declaración impactante, dato clave (headline + caption)
+- texto: reflexión, opinión o historia corta que funciona como post de solo texto, sin imagen ni slides
 
 Responde SOLO con JSON válido:
 {
-  "format": "carousel" | "imagen_con_copy" | "video_script",
+  "format": "carousel" | "imagen" | "texto",
   "rationale": "1-2 líneas explicando por qué este formato"
 }`;
 
@@ -44,7 +44,7 @@ export async function selectFormat(
     });
 
     const parsed = JSON.parse(extractJSON(raw)) as { format: ContentFormat; rationale: string };
-    const validFormats: ContentFormat[] = ['carousel', 'imagen_con_copy', 'video_script'];
+    const validFormats: ContentFormat[] = ['carousel', 'imagen', 'texto', 'video_script'];
 
     if (!validFormats.includes(parsed.format)) {
       throw new Error(`Invalid format returned: ${parsed.format}`);

@@ -73,15 +73,24 @@ Para carousel:
   ]
 }
 
-Para imagen_con_copy:
+Para imagen:
 {
-  "format": "imagen_con_copy",
+  "format": "imagen",
   "pillar": ${ctx.pillar},
   "hook": "primera línea del post",
   "body": "cuerpo del caption sin el hook (80-130 palabras)",
   "hashtags": ["hashtag1", "hashtag2"],
   "headline": "texto imagen ≤8 palabras",
   "subheadline": "texto secundario imagen, 1 frase"
+}
+
+Para texto:
+{
+  "format": "texto",
+  "pillar": ${ctx.pillar},
+  "hook": "primera línea del post",
+  "body": "cuerpo del post sin el hook (120-200 palabras)",
+  "hashtags": ["hashtag1", "hashtag2"]
 }
 
 Para video_script:

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export type ContentFormat = 'carousel' | 'imagen_con_copy' | 'video_script' | 'lead_magnet';
+export type ContentFormat = 'carousel' | 'imagen' | 'texto' | 'video_script' | 'lead_magnet';
 export type ContentPillar = 1 | 2 | 3 | 4 | 5;
 
 // ─── Input ────────────────────────────────────────────────────────────────────
@@ -91,14 +91,14 @@ export const SlideSchema = z.object({
 });
 
 export const PostDraftSchema = z.object({
-  format: z.enum(['carousel', 'imagen_con_copy', 'video_script']),
+  format: z.enum(['carousel', 'imagen', 'texto', 'video_script']),
   pillar: z.number().int().min(1).max(5),
   hook: z.string().min(1),
   body: z.string().min(10),
   hashtags: z.array(z.string()).default([]),
   // carousel
   slides: z.array(SlideSchema).optional(),
-  // imagen_con_copy
+  // imagen
   headline: z.string().optional(),
   subheadline: z.string().optional(),
   // video_script
@@ -167,7 +167,7 @@ export type CriticReport = z.infer<typeof CriticReportSchema>;
 export const GenerateResultSchema = z.object({
   success: z.boolean(),
   ideaTitle: z.string(),
-  format: z.enum(['carousel', 'imagen_con_copy', 'video_script', 'lead_magnet']),
+  format: z.enum(['carousel', 'imagen', 'texto', 'video_script', 'lead_magnet']),
   pillar: z.number().int().min(1).max(5),
   criticScore: z.number(),
   rewrote: z.boolean(),

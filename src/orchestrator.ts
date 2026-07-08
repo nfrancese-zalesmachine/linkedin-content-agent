@@ -32,8 +32,10 @@ function preAssignFormats(count: number, distribution?: Record<string, number>):
 
   const slots: ContentFormat[] = [];
   for (const [fmt, n] of Object.entries(distribution)) {
+    // Normalize the legacy value in case an older platform payload still sends it
+    const normalized = (fmt === 'imagen_con_copy' ? 'imagen' : fmt) as ContentFormat;
     for (let i = 0; i < n; i++) {
-      slots.push(fmt as ContentFormat);
+      slots.push(normalized);
     }
   }
 
@@ -45,7 +47,7 @@ function preAssignFormats(count: number, distribution?: Record<string, number>):
 
   // Trim or pad to match idea count
   while (slots.length < count) {
-    slots.push(slots[slots.length % slots.length] ?? 'imagen_con_copy');
+    slots.push(slots[slots.length % slots.length] ?? 'imagen');
   }
   return slots.slice(0, count);
 }
@@ -200,7 +202,7 @@ async function runLeadMagnetPipeline(
       if (promoPost) {
         await persistPost({
           ...lmResult,
-          format: 'imagen_con_copy',
+          format: 'imagen',
           ideaTitle: `LM Promo: ${lmDraft.title}`,
           content: { post: promoPost },
         }, { clientId, profileId }).catch(err =>

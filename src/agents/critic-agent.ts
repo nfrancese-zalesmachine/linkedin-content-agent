@@ -31,7 +31,7 @@ function buildUser(draft: PostDraft): string {
     content += `\n\nSLIDES (${draft.slides.length}):\n`;
     content += draft.slides.map((s, i) => `Slide ${i + 1}: ${s.heading}\n${s.body}`).join('\n---\n');
   }
-  if (draft.format === 'imagen_con_copy') {
+  if (draft.format === 'imagen') {
     content += `\n\nHEADLINE: ${draft.headline}\nSUBHEADLINE: ${draft.subheadline}`;
   }
   if (draft.format === 'video_script') {
