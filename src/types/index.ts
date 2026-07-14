@@ -3,7 +3,7 @@ import { z } from 'zod';
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export type ContentFormat = 'carousel' | 'imagen' | 'texto' | 'video_script' | 'lead_magnet';
-export type ContentPillar = 1 | 2 | 3 | 4 | 5;
+export type ContentPillar = number; // 1..N — no upper bound (platform allows up to 10+ pillars)
 
 // ─── Input ────────────────────────────────────────────────────────────────────
 
@@ -15,7 +15,7 @@ export const ContentIdeaSchema = z.object({
   detail: z.string().default(''),
   additionalNotes: z.string().default(''),
   sourceUrl: z.string().url().optional().or(z.literal('')).transform(v => v || undefined),
-  pillarNumber: z.number().int().min(1).max(5).optional(),
+  pillarNumber: z.number().int().min(1).optional(),
   funnelStage: z.string().optional(),
   funnelGoal: z.string().optional(),
 });
@@ -24,7 +24,7 @@ export type ContentIdea = z.infer<typeof ContentIdeaSchema>;
 // ─── Creator Profile (multi-tenant) ──────────────────────────────────────────
 
 export const PillarProfileSchema = z.object({
-  id: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  id: z.number().int().min(1),
   name: z.string().min(1),
   keywords: z.array(z.string()).min(1),
   definition: z.string().min(10),
@@ -37,7 +37,7 @@ export const CreatorProfileSchema = z.object({
   creatorName: z.string().min(1),
   voiceRules: z.string().min(10),
   icp: z.string().min(10),
-  pillars: z.array(PillarProfileSchema).min(1).max(5),
+  pillars: z.array(PillarProfileSchema).min(1),
   language: z.enum(['es', 'en', 'pt']).default('es'),
   linkedinBestPractices: z.string().optional(),
   learnedPreferences: z.string().optional(),
@@ -92,7 +92,7 @@ export const SlideSchema = z.object({
 
 export const PostDraftSchema = z.object({
   format: z.enum(['carousel', 'imagen', 'texto', 'video_script']),
-  pillar: z.number().int().min(1).max(5),
+  pillar: z.number().int().min(1),
   hook: z.string().min(1),
   body: z.string().min(10),
   hashtags: z.array(z.string()).default([]),
@@ -118,7 +118,7 @@ export type LMSection = z.infer<typeof LMSectionSchema>;
 export const LeadMagnetDraftSchema = z.object({
   title: z.string(),
   topic: z.string(),
-  pillar: z.number().int().min(1).max(5),
+  pillar: z.number().int().min(1),
   audiencePromise: z.string(),
   sections: z.array(LMSectionSchema),
   markdownContent: z.string(), // assembled full document
@@ -168,7 +168,7 @@ export const GenerateResultSchema = z.object({
   success: z.boolean(),
   ideaTitle: z.string(),
   format: z.enum(['carousel', 'imagen', 'texto', 'video_script', 'lead_magnet']),
-  pillar: z.number().int().min(1).max(5),
+  pillar: z.number().int().min(1),
   criticScore: z.number(),
   rewrote: z.boolean(),
   supabasePostId: z.string().optional(),
