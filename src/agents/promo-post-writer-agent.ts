@@ -3,16 +3,22 @@ import { AgentError } from '../types/index.js';
 import type { LeadMagnetDraft, PostDraft, SessionContext } from '../types/index.js';
 
 function buildSystem(ctx: SessionContext): string {
-  return `Sos el ghost-writer de Nicolas Francese. Escribís el post de LinkedIn que promociona un Lead Magnet recién creado.
+  const creatorName = ctx.creatorName ?? 'el creador';
+
+  const learnedSection = ctx.learnedPreferences?.trim()
+    ? `\n\n# Preferencias aprendidas del cliente (basadas en ediciones reales)\n${ctx.learnedPreferences}`
+    : '';
+
+  return `Sos el ghost-writer de ${creatorName}. Escribís el post de LinkedIn que promociona un Lead Magnet recién creado.
 
 El post debe:
 - Vender la PROMESA del LM, no el LM en sí
-- Usar la voz exacta de Nicolas (frases cortas, sin emojis, datos concretos)
+- Usar la voz exacta de ${creatorName} (frases cortas, sin emojis, datos concretos)
 - Formato: imagen con copy (headline + caption)
 - El lector debe pensar "quiero leer eso" después del primer párrafo
 
-# Voz de Nicolas
-${ctx.voiceRules}
+# Voz de ${creatorName}
+${ctx.voiceRules}${learnedSection}
 
 Respondé SOLO con JSON:
 {
