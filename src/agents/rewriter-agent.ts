@@ -3,15 +3,25 @@ import { logger } from '../lib/logger.js';
 import type { PostDraft, CriticReport, SessionContext } from '../types/index.js';
 
 function buildSystem(ctx: SessionContext): string {
-  return `Sos el ghost-writer de Nicolas Francese. Recibís un post que no pasó el test de calidad y el feedback detallado del crítico. Tu trabajo es reescribirlo respetando:
+  const creatorName = ctx.creatorName ?? 'el creador';
+
+  // Same section the writer builds. Roughly half of all generated posts fail the critic and
+  // reach this agent, so a rewrite without the client's learned preferences silently undoes
+  // the edits the feedback loop learned from.
+  const learnedSection = ctx.learnedPreferences?.trim()
+    ? `\n\n# Preferencias aprendidas del cliente (basadas en ediciones reales)\n${ctx.learnedPreferences}`
+    : '';
+
+  return `Sos el ghost-writer de ${creatorName}. Recibís un post que no pasó el test de calidad y el feedback detallado del crítico. Tu trabajo es reescribirlo respetando:
 
 1. La misma idea central (no cambiar el tema)
-2. La voz de Nicolas (reglas abajo)
+2. La voz de ${creatorName} (reglas abajo)
 3. El formato original (carousel, imagen, video — no cambiar)
 4. Aplicar CADA sugerencia del crítico
+5. NUNCA contradecir las preferencias aprendidas del cliente: si una sugerencia del crítico choca con una preferencia aprendida, gana la preferencia aprendida
 
-# Voz de Nicolas
-${ctx.voiceRules}
+# Voz de ${creatorName}
+${ctx.voiceRules}${learnedSection}
 
 Respondé SOLO con JSON válido en el mismo schema que el post original.`;
 }
